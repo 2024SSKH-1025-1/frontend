@@ -1,5 +1,6 @@
+"use client";
 import React, { useEffect, useRef } from "react";
-import * as tf from "@tensorflow/tfjs";
+import "@tensorflow/tfjs";
 import * as posenet from "@tensorflow-models/posenet";
 
 const PoseNetComponent = () => {
@@ -25,6 +26,8 @@ const PoseNetComponent = () => {
                     resolve(videoRef.current);
                 };
             });
+
+            loadPosenet();
         };
 
         const loadPosenet = async () => {
@@ -212,25 +215,24 @@ const PoseNetComponent = () => {
         };
 
         setupCamera();
-        loadPosenet();
     }, []);
 
     return (
-        <div style={{ position: "relative", width: 640, height: 480 }}>
+        <div className="relative w-[640px] h-[480px]">
             <video
                 ref={videoRef}
-                style={{ position: "absolute", top: 0, left: 0 }}
                 autoPlay
                 playsInline
                 muted
                 width="640"
                 height="480"
+                className="absolute top-0 left-0 rounded-xl"
             />
             <canvas
                 ref={canvasRef}
-                style={{ position: "absolute", top: 0, left: 0 }}
                 width="640"
                 height="480"
+                className="absolute top-0 left-0 rounded-xl"
             />
         </div>
     );

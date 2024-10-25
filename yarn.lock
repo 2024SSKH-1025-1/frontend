@@ -14,6 +14,7 @@ __metadata:
     postcss: "npm:^8"
     react: "npm:19.0.0-rc-69d4b800-20241021"
     react-dom: "npm:19.0.0-rc-69d4b800-20241021"
+    react-sound-visualizer: "npm:1.1.1"
     tailwindcss: "npm:^3.4.1"
   languageName: unknown
   linkType: soft
@@ -1587,6 +1588,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-sound-visualizer@npm:1.1.1":
+  version: 1.1.1
+  resolution: "react-sound-visualizer@npm:1.1.1"
+  dependencies:
+    sound-visualizer: "npm:^1.2.0"
+  peerDependencies:
+    react: ">= 16"
+  checksum: 10c0/6b9c9ebce8c5191a3e4c63f3a0ad3c6cc8037fc7b20d189ae1be16bf589e35f443bd924681c03c27e70a4bb26725cc34b08d85979b2032f8e454c569293b2d4e
+  languageName: node
+  linkType: hard
+
 "react@npm:19.0.0-rc-69d4b800-20241021":
   version: 19.0.0-rc-69d4b800-20241021
   resolution: "react@npm:19.0.0-rc-69d4b800-20241021"
@@ -1810,6 +1822,13 @@ __metadata:
     ip-address: "npm:^9.0.5"
     smart-buffer: "npm:^4.2.0"
   checksum: 10c0/d54a52bf9325165770b674a67241143a3d8b4e4c8884560c4e0e078aace2a728dffc7f70150660f51b85797c4e1a3b82f9b7aa25e0a0ceae1a243365da5c51a7
+  languageName: node
+  linkType: hard
+
+"sound-visualizer@npm:^1.2.0":
+  version: 1.3.0
+  resolution: "sound-visualizer@npm:1.3.0"
+  checksum: 10c0/4288369a7388a3ae3c36eb2d910853646cbaeb62a221d533dab6aa9fdd61513417662932fc8443903ada0758b152a6c9ee025741d7124387d0ecdeda8db4cef2
   languageName: node
   linkType: hard
 

@@ -38,6 +38,23 @@ const PoseNetComponent = () => {
                     flipHorizontal: false,
                 });
 
+                const keypointPositions = [];
+
+                pose.keypoints.forEach((keypoint) => {
+                    if (keypoint.score >= 0.5) {
+                        const { x, y } = keypoint.position;
+                        keypointPositions.push({
+                            part: keypoint.part,
+                            position: { x, y },
+                            score: keypoint.score,
+                        });
+                    }
+                });
+                if (keypointPositions.length >= 11) {
+                    sendDataToBackend(keypointPositions);
+                }
+                console.log(keypointPositions);
+
                 drawPose(pose);
             }
         };
@@ -234,6 +251,27 @@ const PoseNetComponent = () => {
             />
         </div>
     );
+};
+
+const sendDataToBackend = async (data) => {
+    try {
+        const response = await fetch("http://localhost:8000/pose", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ keypoints: data }),
+        });
+
+        if (!response.ok) {
+            throw new Error("서버 응답이 올바르지 않습니다.");
+        }
+
+        const result = await response.json();
+        console.log("back :", result);
+    } catch (error) {
+        console.error("error :", error);
+    }
 };
 
 export default PoseNetComponent;

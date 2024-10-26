@@ -34,7 +34,7 @@ const PoseNetComponent = () => {
 
         const fetchBackendKeypoints = async () => {
             try {
-                const response = await fetch(`${BACKEND}/next-keypoint`);
+                const response = await fetch(`${BACKEND}/keypoint/read`);
                 if (!response.ok) {
                     throw new Error("서버 응답이 올바르지 않습니다.");
                 }
@@ -76,66 +76,50 @@ const PoseNetComponent = () => {
             }
         };
 
-        const addGaussianNoiseToFrame = (imageTensor, noiseStdDev) => {
-            const noise = tf.randomNormal(imageTensor.shape, 0, noiseStdDev);
-            return imageTensor.add(noise).clipByValue(0, 255);
-        };
-
         const detectPose = async (net) => {
             if (videoRef.current && canvasRef.current) {
                 const videoTensor = tf.browser.fromPixels(videoRef.current);
 
-                // 비디오 프레임에 가우시안 노이즈 추가
-                const noiseStdDev = 3; // 필요에 따라 조절
-                const noisyFrame = addGaussianNoiseToFrame(videoTensor, noiseStdDev);
-
-                // 노이즈가 추가된 프레임으로 포즈 추정
-                const pose = await net.estimateSinglePose(noisyFrame, {
+                const pose = await net.estimateSinglePose(videoTensor, {
                     flipHorizontal: false,
                 });
 
                 // 메모리 해제를 위해 텐서 삭제
                 videoTensor.dispose();
-                noisyFrame.dispose();
 
                 const keypointPositions = [];
 
                 pose.keypoints.forEach((keypoint) => {
                     if (keypoint.score >= 0.5) {
                         const { x, y } = keypoint.position;
-
-                        const noiseX = tf.randomNormal([1], 0, noiseStdDev).dataSync()[0];
-                        const noiseY = tf.randomNormal([1], 0, noiseStdDev).dataSync()[0];
-
                         keypointPositions.push({
                             part: keypoint.part,
-                            position: { x: x + noiseX, y: y + noiseY },
+                            position: { x, y },
                             score: keypoint.score,
                         });
                     }
                 });
 
-                if (backendKeypoints) {
-                    const commonKeypoints = keypointPositions.filter((clientPoint) => backendKeypoints.some((backendPoint) => backendPoint.part === clientPoint.part));
+                // if (backendKeypoints) {
+                //     const commonKeypoints = keypointPositions.filter((clientPoint) => backendKeypoints.some((backendPoint) => backendPoint.part === clientPoint.part));
 
-                    const backendCommonKeypoints = backendKeypoints.filter((backendPoint) => keypointPositions.some((clientPoint) => clientPoint.part === backendPoint.part));
+                //     const backendCommonKeypoints = backendKeypoints.filter((backendPoint) => keypointPositions.some((clientPoint) => clientPoint.part === backendPoint.part));
 
-                    if (commonKeypoints.length > 0 && commonKeypoints.length === backendCommonKeypoints.length) {
-                        const similarity = calculateCosineSimilarity(commonKeypoints, backendCommonKeypoints);
-                        console.log("코사인 유사도:", similarity);
-                    } else {
-                        console.log("공통 키포인트가 충분하지 않습니다.");
-                    }
-                }
+                //     if (commonKeypoints.length > 0 && commonKeypoints.length === backendCommonKeypoints.length) {
+                //         const similarity = calculateCosineSimilarity(commonKeypoints, backendCommonKeypoints);
+                //         console.log("코사인 유사도:", similarity);
+                //     } else {
+                //         console.log("공통 키포인트가 충분하지 않습니다.");
+                //     }
+                // }
 
-                if (keypointPositions.length >= 11) {
-                    const intervalInSeconds = 1; // 원하는 시간 간격(초)을 설정하세요
+                if (keypointPositions.length >= 14) {
+                    const intervalInSeconds = 0.5; // 원하는 시간 간격(초)을 설정하세요
                     const currentTime = Date.now();
 
                     if (!lastSaveTimeRef.current || currentTime - lastSaveTimeRef.current >= intervalInSeconds * 1000) {
                         // console.log(keypointPositions);
-                        // 데이터를 백엔드로 전송하거나 배열에 저장
-                        sendDataToBackend(keypointPositions);
+                        sendDataToBackend(keypointPositions, BACKEND);
 
                         lastSaveTimeRef.current = currentTime;
                     }
@@ -308,7 +292,7 @@ const PoseNetComponent = () => {
     );
 };
 
-const sendDataToBackend = async (data) => {
+const sendDataToBackend = async (data, BACKEND) => {
     try {
         const response = await fetch(`${BACKEND}/pose`, {
             method: "POST",
@@ -319,7 +303,7 @@ const sendDataToBackend = async (data) => {
         });
 
         if (!response.ok) {
-            throw new Error("서버 응답이 올바르지 않습니다.");
+            throw new Error("서버 응답이 올바르지 않습니다._ send data to back");
         }
 
         const result = await response.json();

@@ -18,7 +18,7 @@ const AccuracyBar = () => {
 
     setTimeout(() => {
       setInterval(fetchAccuracy, 500);
-    }, 2000);
+    }, 6000);
   }, []);
 
   return (
@@ -26,7 +26,7 @@ const AccuracyBar = () => {
       {accuracy ? <>
         <progress className="progress progress-primary w-full" value={accuracy} max="100" />
         <p className="text-center mt-2 text-lg">{Math.round(accuracy)}%</p>
-      </>: <p>데이터 로딩 중...</p>}
+      </>: <p>준비 중...</p>}
     </div>
   );
 };

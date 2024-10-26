@@ -13,6 +13,7 @@ __metadata:
     "@tensorflow/tfjs": "npm:^4.22.0"
     "@tensorflow/tfjs-data": "npm:^4.22.0"
     daisyui: "npm:^4.12.13"
+    framer-motion: "npm:12.0.0-alpha.0"
     next: "npm:15.0.1"
     postcss: "npm:^8"
     react: "npm:19.0.0-rc-69d4b800-20241021"
@@ -1056,6 +1057,26 @@ __metadata:
     combined-stream: "npm:^1.0.8"
     mime-types: "npm:^2.1.12"
   checksum: 10c0/bb102d570be8592c23f4ea72d7df9daa50c7792eb0cf1c5d7e506c1706e7426a4e4ae48a35b109e91c85f1c0ec63774a21ae252b66f4eb981cb8efef7d0463c8
+  languageName: node
+  linkType: hard
+
+"framer-motion@npm:12.0.0-alpha.0":
+  version: 12.0.0-alpha.0
+  resolution: "framer-motion@npm:12.0.0-alpha.0"
+  dependencies:
+    tslib: "npm:^2.4.0"
+  peerDependencies:
+    "@emotion/is-prop-valid": "*"
+    react: ^18.0.0
+    react-dom: ^18.0.0
+  peerDependenciesMeta:
+    "@emotion/is-prop-valid":
+      optional: true
+    react:
+      optional: true
+    react-dom:
+      optional: true
+  checksum: 10c0/4e0304b3a8ddb4df8e3c056ead92424dc097b9079798db9189e163130959b1f977ca81f537a5a779c77a94fe6916db2788e3f14072170fa2f6140edd7c3fcdbe
   languageName: node
   linkType: hard
 

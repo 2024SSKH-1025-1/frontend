@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 export default function SpeechToText(props) {
     const [transcription, setTranscription] = useState('');
-    const [recorder, setMediaRecorder] = useState(null); 
+    const [recorder, setMediaRecorder] = useState(null);
 
     // Function to convert audio blob to base64 encoded string
     const audioBlobToBase64 = (blob) => {
@@ -121,7 +121,8 @@ export default function SpeechToText(props) {
                 </p>
                 <p>{transcription}</p>
             </div>
-            <form className="flex gap-2 bg-base-300 m-8 p-2 rounded-xl">
+            <form className="flex gap-2 bg-base-300 m-8 p-2 rounded-xl" action={props.action}>
+                <input type="hidden" name="script" value={transcription} />
                 <button className="btn btn-block shrink text-lg">메시지 전송하기</button>
                 <button type="button" className="btn btn-block shrink text-lg" onClick={removeTranscription}>지우기</button>
             </form>

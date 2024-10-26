@@ -113,7 +113,7 @@ const PoseNetComponent = () => {
             //     flipHorizontal: false,
             // });
             const pose = await net.estimateSinglePose(videoRef.current, {
-                flipHorizontal: false,
+                flipHorizontal: true,
             });
 
             // // 메모리 해제를 위해 텐서 삭제
@@ -359,7 +359,7 @@ const PoseNetComponent = () => {
                         muted
                         width="640"
                         height="480"
-                        className="absolute top-0 left-0 rounded-xl"
+                        className="scale-x-[-1] scale-y-[1]"
                     />
                     <canvas
                         ref={canvasRef}

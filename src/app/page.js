@@ -3,7 +3,7 @@ import { SendSpeech } from "./actions/SendSpeech";
 import Microphone from "./components/Microphone";
 import ResultViewer from "./components/ResultViewer";
 import SpeechToText from "./components/SpeechToText";
-import PoseNetComponent from "./PoseNetComponent";
+import PoseNetComponent from "./components/PoseNetComponent";
 import { useState, useActionState } from "react";
 import { AnimatePresence } from "framer-motion";
 import VideoViewer from "./components/VideoViewer";

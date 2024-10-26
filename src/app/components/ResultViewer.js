@@ -8,14 +8,10 @@ export default function ResultViewer(props) {
 
     useEffect(() => {
         if (props.result) {
-            const videoList = [];
             if (!props.result.error) {
-                props.result.map(element => videoList.push(element[1]));
+                props.setVideoList(props.result);
             }
-
-            props.setVideoList(videoList);
         }
-    
     }, [props.result]);
 
     return (

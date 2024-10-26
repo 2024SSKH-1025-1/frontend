@@ -359,7 +359,7 @@ const PoseNetComponent = () => {
                         muted
                         width="640"
                         height="480"
-                        className="scale-x-[-1] scale-y-[1]"
+                        className="scale-x-[-1] scale-y-[1] rounded-xl"
                     />
                     <canvas
                         ref={canvasRef}

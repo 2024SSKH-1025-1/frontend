@@ -1,10 +1,12 @@
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function VideoViewer(props) {
+    const video = useRef(null);
     const [cIndex, setIndex] = useState(undefined);
     const [prevVideo, setPrev] = useState(undefined);
     const [nextVideo, setNext] = useState(undefined);
+    const [replay, setReplayBtn] = useState(false);
 
     useEffect(() => {
         setIndex(props.name);
@@ -22,7 +24,18 @@ export default function VideoViewer(props) {
             setNext(props.list[cIndex]);
             setIndex(cIndex - 1);
         }
-    } 
+    }
+
+    function showReplay() {
+        setReplayBtn(true);
+    }
+
+    function replayVideo() {
+        if (video.current) {
+            video.current.play();
+            setReplayBtn(false);
+        }
+    }
 
     return (
         <motion.div className="card bg-base-200 h-full"
@@ -35,13 +48,22 @@ export default function VideoViewer(props) {
                 </button>
             </div>
             <section className="card-body items-center justify-center">
+                {props.list[cIndex] ? <h2 className="text-xl">{props.list[cIndex][0]}</h2> : ""}
                 <div>
                     {props.list[cIndex] ? 
                         <video 
-                            src={`${process.env.NEXT_PUBLIC_API_ENDPOINT}/video/${props.list[cIndex]}`}
+                            ref={video}
+                            src={`${process.env.NEXT_PUBLIC_API_ENDPOINT}/video/${props.list[cIndex][1]}`}
                             className="h-full w-full rounded-xl" autoPlay controls controlsList="nodownload"
+                            onEnded={showReplay}
                         />
                     : ""}
+                    {replay ? <div className="relative w-full h-full top-[-100%] z-10 backdrop-blur flex items-center justify-center rounded-xl">
+                        <button type="button" onClick={replayVideo}>
+                            <span className="material-symbols-outlined text-4xl btn btn-circle">refresh</span>
+                        </button>
+                    </div>
+                    :""}
                 </div>
             </section>
             <section id="control" className="flex rounded-xl m-4 p-2 gap-2 bg-base-300">

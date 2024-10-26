@@ -14,19 +14,28 @@ export default function ResultViewer(props) {
     }, [props.result]);
 
     return (
-        <motion.div className="card bg-base-200 h-1/2" 
+        <motion.div className="card bg-base-200 h-[calc(50vh-2rem)]" 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <section className="card-body">
+            <section className="card-body overflow-scroll grow-0">
                 {props.result ? 
                     (props.result.error ? <p>{props.result.error}</p> : (
                         <ul className="list-none p-0">
                             {props.result.map((element, index) => 
-                            <motion.li className="flex gap-2 items-center my-2" key={index}
+                            <motion.li className="flex gap-2 items-center justify-between my-2 border-b-2" key={index}
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 transition={{ delay: 0.5 * index }}>
-                                <span>{element[0]}</span>
-                                <button className="btn bg-base-100" onClick={() => props.setVideo(index)}>보기</button>
+                                <div className="flex flex-col gap-1 my-2">
+                                    <h2 className="text-2xl">{element.title}</h2>
+                                    <p>{element.description}</p>
+                                    <p className="flex gap-2">
+                                        <span className="badge badge-primary text-md w-12 shrink-0">효과</span>
+                                        {element.effect}
+                                    </p>
+                                </div>
+                                <button className="btn btn-circle bg-base-100" onClick={() => props.setVideo(index)}>
+                                    <span className="material-symbols-outlined">arrow_forward</span>
+                                </button>
                             </motion.li>
                             )}
                         </ul>

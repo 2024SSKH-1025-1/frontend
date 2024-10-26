@@ -1,11 +1,15 @@
 "use client";
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useContext, useRef, useEffect } from "react";
 import * as poseDetection from '@tensorflow-models/pose-detection';
 import '@tensorflow/tfjs-backend-webgl';
 import * as tf from "@tensorflow/tfjs";
 import AccuracyBar from "./AccuracyBar";
 
-const PoseNetComponent = (props) => {
+import { VideoPlayingContext } from "../context/VideoPlaying";
+
+const PoseNetComponent = () => {
+    const { playing, setPlaying } = useContext(VideoPlayingContext);
+
     const lastSaveTimeRef = useRef(null);
     const [backendKeypoints, setBackendKeypoints] = useState(null);
     const [loadingMic, setLoading] = useState(false);
@@ -25,6 +29,7 @@ const PoseNetComponent = (props) => {
             setCamera(undefined);
             setLoading(false);
             setReplayBtn(true);
+            setPlaying(false);
         } else {
             try {
                 const currentCamera = await navigator.mediaDevices.getUserMedia({
@@ -50,6 +55,7 @@ const PoseNetComponent = (props) => {
                 setCamera(undefined);
                 setLoading(false);
                 setReplayBtn(true);
+                setPlaying(false);
             }
         }
     };
@@ -421,7 +427,7 @@ const PoseNetComponent = (props) => {
                     </div>
                     :""}
                 </div>
-                {props.vList[props.vi] && !props.rp ? <AccuracyBar /> : ""}
+                {playing ? <AccuracyBar /> : ""}
                 <dialog ref={dialog} className="modal">
                     <div className="modal-box">
                         <h1 className="text-2xl my-2">

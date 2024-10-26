@@ -8,18 +8,21 @@ import AccuracyBar from "./components/AccuracyBar";
 import { useState, useActionState } from "react";
 import { AnimatePresence } from "framer-motion";
 import VideoViewer from "./components/VideoViewer";
+import { VideoPlayingContext } from "./context/VideoPlaying";
 
 export default function Home() {
   const [micStream, setMicStream] = useState(null);
   const [videoIndex, setVideo] = useState(null);
   const [videoList, setVideoList] = useState([]);
   const [result, sendScript] = useActionState(SendSpeech, null);
-  const [replay, setReplayBtn] = useState(false);
+
+  const [playing, setPlaying] = useState(false);
 
   return (
     <main className="flex m-4 gap-4 bg-base-100">
+      <VideoPlayingContext.Provider value={{ playing, setPlaying }}>
       <section id="userMedia" className="h-[calc(100vh-2em)] gap-4 flex flex-col w-1/2">
-        <PoseNetComponent vi={videoIndex} vList={videoList} rp={replay} />
+        <PoseNetComponent />
         <Microphone micStream={micStream} setMicStream={setMicStream} setVideo={setVideo} />
       </section>
       <section id="userResult" className="flex flex-col gap-4 w-1/2">
@@ -30,10 +33,11 @@ export default function Home() {
               <ResultViewer result={result} setVideo={setVideo} setVideoList={setVideoList} />
             </>
           ) : (
-            <VideoViewer name={videoIndex} list={videoList} setVideoPage={setVideo} replay={replay} setReplayBtn={setReplayBtn} />
+            <VideoViewer name={videoIndex} list={videoList} setVideoPage={setVideo}/>
           )}
         </AnimatePresence>
       </section>
+      </VideoPlayingContext.Provider>
     </main>
   );
 }

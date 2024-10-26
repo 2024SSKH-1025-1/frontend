@@ -1,20 +1,33 @@
 import { motion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
+import { VideoPlayingContext } from "../context/VideoPlaying";
 
 export default function VideoViewer(props) {
+    const { playing, setPlaying } = useContext(VideoPlayingContext);
+
     const video = useRef(null);
     const [cIndex, setIndex] = useState(undefined);
     const [prevVideo, setPrev] = useState(undefined);
     const [nextVideo, setNext] = useState(undefined);
-    
+    const [replay, setReplayBtn] = useState(false);
+
+    useEffect(() => {
+        if (!playing && video.current) {
+            video.current.pause();
+        } else if (playing && video.current) {
+            video.current.play();
+        }
+    }, [playing])
 
     useEffect(() => {
         setIndex(props.name);
         setPrev(props.name > 0 ? props.list[props.name - 1] : undefined);
         setNext(props.name + 1 < props.list.length ? props.list[props.name + 1] : undefined);
+        setPlaying(true);
     }, [props.name]);
 
     function changeSource(mode) {
+        setPlaying(false);
         if (mode === "next") {
             setPrev(props.list[cIndex]);
             setNext(cIndex + 2 < props.list.length ? props.list[cIndex + 2] : undefined);
@@ -25,17 +38,20 @@ export default function VideoViewer(props) {
             setIndex(cIndex - 1);
         }
 
-        props.setReplayBtn(false);
+        setReplayBtn(false);
+        setTimeout(() => setPlaying(true), 1500);
     }
 
     function showReplay() {
-        props.setReplayBtn(true);
+        setReplayBtn(true);
+        setPlaying(false);
     }
 
     function replayVideo() {
         if (video.current) {
             video.current.play();
-            props.setReplayBtn(false);
+            setReplayBtn(false);
+            setPlaying(true);
         }
     }
 
@@ -46,7 +62,9 @@ export default function VideoViewer(props) {
                 <h1 className="text-2xl">동영상을 보고 따라해보세요</h1>
                 <button type="button" className="btn btn-circle"
                     onClick={() => {
-                        props.setVideoPage(null); props.setReplayBtn(false);
+                        props.setVideoPage(null);
+                        setReplayBtn(false);
+                        setPlaying(false);
                     }}>
                     <span className="material-symbols-outlined">close</span>
                 </button>
@@ -69,9 +87,11 @@ export default function VideoViewer(props) {
                             src={`${process.env.NEXT_PUBLIC_API_ENDPOINT}/video/${props.list[cIndex].video}`}
                             className="h-full w-full rounded-xl" autoPlay controls controlsList="nodownload"
                             onEnded={showReplay}
+                            onPause={() => setPlaying(false)}
+                            onPlay={() => setPlaying(true)}
                         />
                     : ""}
-                    {props.replay ? <div className="relative w-full h-full top-[-100%] z-10 backdrop-blur flex items-center justify-center rounded-xl">
+                    {replay ? <div className="relative w-full h-full top-[-100%] z-10 backdrop-blur flex items-center justify-center rounded-xl">
                         <button type="button" className="absolute" onClick={replayVideo}>
                             <span className="material-symbols-outlined text-4xl btn btn-circle">refresh</span>
                         </button>

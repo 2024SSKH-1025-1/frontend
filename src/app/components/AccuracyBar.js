@@ -25,7 +25,7 @@ const AccuracyBar = () => {
     <div className="w-2/3">
       {accuracy ? <>
         <progress className="progress progress-primary w-full" value={accuracy} max="100" />
-        <p className="text-center mt-2 text-sm">{Math.round(accuracy)}%</p>
+        <p className="text-center mt-2 text-lg">{Math.round(accuracy)}%</p>
       </>: <p>데이터 로딩 중...</p>}
     </div>
   );

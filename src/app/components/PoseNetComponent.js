@@ -397,7 +397,7 @@ const PoseNetComponent = (props) => {
                     }
                 </button>
             </div>
-            <div className="flex flex-col items-center justify-center pb-20 bg-base-200 h-full">
+            <div className="flex flex-col gap-4 items-center justify-center pb-20 bg-base-200 h-full">
                 <div className="relative w-[640px] h-[480px]">
                     <video
                         ref={videoRef}

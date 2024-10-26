@@ -33,7 +33,7 @@ const PoseNetComponent = () => {
                     };
                 });
     
-                fetchBackendKeypoints();
+                // fetchBackendKeypoints();
                 loadPosenet();
                 setLoading(false);
             } catch {
@@ -102,37 +102,40 @@ const PoseNetComponent = () => {
 
     const detectPose = async (net) => {
         if (videoRef.current && canvasRef.current) {
-            const videoTensor = tf.browser.fromPixels(videoRef.current);
+            // const videoTensor = tf.browser.fromPixels(videoRef.current);
 
-            // 비디오 프레임에 가우시안 노이즈 추가
-            const noiseStdDev = 3; // 필요에 따라 조절
-            const noisyFrame = addGaussianNoiseToFrame(videoTensor, noiseStdDev);
+            // // 비디오 프레임에 가우시안 노이즈 추가
+            // const noiseStdDev = 3; // 필요에 따라 조절
+            // const noisyFrame = addGaussianNoiseToFrame(videoTensor, noiseStdDev);
 
-            // 노이즈가 추가된 프레임으로 포즈 추정
-            const pose = await net.estimateSinglePose(noisyFrame, {
+            // // 노이즈가 추가된 프레임으로 포즈 추정
+            // const pose = await net.estimateSinglePose(noisyFrame, {
+            //     flipHorizontal: false,
+            // });
+            const pose = await net.estimateSinglePose(videoRef.current, {
                 flipHorizontal: false,
             });
 
-            // 메모리 해제를 위해 텐서 삭제
-            videoTensor.dispose();
-            noisyFrame.dispose();
+            // // 메모리 해제를 위해 텐서 삭제
+            // videoTensor.dispose();
+            // noisyFrame.dispose();
 
-            const keypointPositions = [];
+            // const keypointPositions = [];
 
-            pose.keypoints.forEach((keypoint) => {
-                if (keypoint.score >= 0.5) {
-                    const { x, y } = keypoint.position;
+            // pose.keypoints.forEach((keypoint) => {
+            //     if (keypoint.score >= 0.5) {
+            //         const { x, y } = keypoint.position;
 
-                    const noiseX = tf.randomNormal([1], 0, noiseStdDev).dataSync()[0];
-                    const noiseY = tf.randomNormal([1], 0, noiseStdDev).dataSync()[0];
+            //         const noiseX = tf.randomNormal([1], 0, noiseStdDev).dataSync()[0];
+            //         const noiseY = tf.randomNormal([1], 0, noiseStdDev).dataSync()[0];
 
-                    keypointPositions.push({
-                        part: keypoint.part,
-                        position: { x: x + noiseX, y: y + noiseY },
-                        score: keypoint.score,
-                    });
-                }
-            });
+            //         keypointPositions.push({
+            //             part: keypoint.part,
+            //             position: { x: x + noiseX, y: y + noiseY },
+            //             score: keypoint.score,
+            //         });
+            //     }
+            // });
 
             if (backendKeypoints) {
                 const commonKeypoints = keypointPositions.filter((clientPoint) => backendKeypoints.some((backendPoint) => backendPoint.part === clientPoint.part));
@@ -147,18 +150,18 @@ const PoseNetComponent = () => {
                 }
             }
 
-            if (keypointPositions.length >= 11) {
-                const intervalInSeconds = 1; // 원하는 시간 간격(초)을 설정하세요
-                const currentTime = Date.now();
+            // if (keypointPositions.length >= 11) {
+            //     const intervalInSeconds = 1; // 원하는 시간 간격(초)을 설정하세요
+            //     const currentTime = Date.now();
 
-                if (!lastSaveTimeRef.current || currentTime - lastSaveTimeRef.current >= intervalInSeconds * 1000) {
-                    // console.log(keypointPositions);
-                    // 데이터를 백엔드로 전송하거나 배열에 저장
-                    sendDataToBackend(keypointPositions);
+            //     if (!lastSaveTimeRef.current || currentTime - lastSaveTimeRef.current >= intervalInSeconds * 1000) {
+            //         // console.log(keypointPositions);
+            //         // 데이터를 백엔드로 전송하거나 배열에 저장
+            //         // sendDataToBackend(keypointPositions);
 
-                    lastSaveTimeRef.current = currentTime;
-                }
-            }
+            //         lastSaveTimeRef.current = currentTime;
+            //     }
+            // }
 
             drawPose(pose);
         }

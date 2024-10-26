@@ -14,12 +14,12 @@ export default function Home() {
   const [videoIndex, setVideo] = useState(null);
   const [videoList, setVideoList] = useState([]);
   const [result, sendScript] = useActionState(SendSpeech, null);
+  const [replay, setReplayBtn] = useState(false);
 
   return (
     <main className="flex m-4 gap-4 bg-base-100">
       <section id="userMedia" className="h-[calc(100vh-2em)] gap-4 flex flex-col w-1/2">
-        <PoseNetComponent />
-        <AccuracyBar />
+        <PoseNetComponent vi={videoIndex} vList={videoList} rp={replay} />
         <Microphone micStream={micStream} setMicStream={setMicStream} setVideo={setVideo} />
       </section>
       <section id="userResult" className="flex flex-col gap-4 w-1/2">
@@ -30,7 +30,7 @@ export default function Home() {
               <ResultViewer result={result} setVideo={setVideo} setVideoList={setVideoList} />
             </>
           ) : (
-            <VideoViewer name={videoIndex} list={videoList} setVideoPage={setVideo} />
+            <VideoViewer name={videoIndex} list={videoList} setVideoPage={setVideo} replay={replay} setReplayBtn={setReplayBtn} />
           )}
         </AnimatePresence>
       </section>

@@ -6,7 +6,7 @@ export default function VideoViewer(props) {
     const [cIndex, setIndex] = useState(undefined);
     const [prevVideo, setPrev] = useState(undefined);
     const [nextVideo, setNext] = useState(undefined);
-    const [replay, setReplayBtn] = useState(false);
+    
 
     useEffect(() => {
         setIndex(props.name);
@@ -25,17 +25,17 @@ export default function VideoViewer(props) {
             setIndex(cIndex - 1);
         }
 
-        setReplayBtn(false);
+        props.setReplayBtn(false);
     }
 
     function showReplay() {
-        setReplayBtn(true);
+        props.setReplayBtn(true);
     }
 
     function replayVideo() {
         if (video.current) {
             video.current.play();
-            setReplayBtn(false);
+            props.setReplayBtn(false);
         }
     }
 
@@ -45,7 +45,9 @@ export default function VideoViewer(props) {
             <div className="flex justify-between p-5 bg-base-300 rounded-t-2xl items-center">
                 <h1 className="text-2xl">동영상을 보고 따라해보세요</h1>
                 <button type="button" className="btn btn-circle"
-                    onClick={() => props.setVideoPage(null)}>
+                    onClick={() => {
+                        props.setVideoPage(null); props.setReplayBtn(false);
+                    }}>
                     <span className="material-symbols-outlined">close</span>
                 </button>
             </div>
@@ -69,7 +71,7 @@ export default function VideoViewer(props) {
                             onEnded={showReplay}
                         />
                     : ""}
-                    {replay ? <div className="relative w-full h-full top-[-100%] z-10 backdrop-blur flex items-center justify-center rounded-xl">
+                    {props.replay ? <div className="relative w-full h-full top-[-100%] z-10 backdrop-blur flex items-center justify-center rounded-xl">
                         <button type="button" className="absolute" onClick={replayVideo}>
                             <span className="material-symbols-outlined text-4xl btn btn-circle">refresh</span>
                         </button>

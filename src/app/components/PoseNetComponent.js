@@ -3,8 +3,9 @@ import React, { useState, useRef, useEffect } from "react";
 import * as poseDetection from '@tensorflow-models/pose-detection';
 import '@tensorflow/tfjs-backend-webgl';
 import * as tf from "@tensorflow/tfjs";
+import AccuracyBar from "./AccuracyBar";
 
-const PoseNetComponent = () => {
+const PoseNetComponent = (props) => {
     const lastSaveTimeRef = useRef(null);
     const [backendKeypoints, setBackendKeypoints] = useState(null);
     const [loadingMic, setLoading] = useState(false);
@@ -396,7 +397,7 @@ const PoseNetComponent = () => {
                     }
                 </button>
             </div>
-            <div className="flex items-center justify-center pb-20 bg-base-200 h-full">
+            <div className="flex flex-col items-center justify-center pb-20 bg-base-200 h-full">
                 <div className="relative w-[640px] h-[480px]">
                     <video
                         ref={videoRef}
@@ -420,6 +421,7 @@ const PoseNetComponent = () => {
                     </div>
                     :""}
                 </div>
+                {props.vList[props.vi] && !props.rp ? <AccuracyBar /> : ""}
                 <dialog ref={dialog} className="modal">
                     <div className="modal-box">
                         <h1 className="text-2xl my-2">

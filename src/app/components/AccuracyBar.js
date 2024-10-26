@@ -10,25 +10,23 @@ const AccuracyBar = () => {
         const data = await response.json();
         console.log(data);
 
-        setAccuracy(data.accuracy);
+        setAccuracy(((data.accuracy + 1) / 2) * 100);
       } catch (error) {
         console.error("정확도 데이터를 가져오는 중 오류 발생:", error);
       }
     };
 
-    setInterval(fetchAccuracy, 500);
+    setTimeout(() => {
+      setInterval(fetchAccuracy, 500);
+    }, 2000);
   }, []);
 
-  if (accuracy === null) {
-    return <p>데이터 로딩 중...</p>;
-  }
-
-  const percentage = ((accuracy + 1) / 2) * 100;
-
   return (
-    <div className="w-full">
-      <progress className="progress progress-primary w-full" value={percentage} max="100" />
-      <p className="text-center mt-2 text-sm">{Math.round(percentage)}%</p>
+    <div className="w-2/3">
+      {accuracy ? <>
+        <progress className="progress progress-primary w-full" value={accuracy} max="100" />
+        <p className="text-center mt-2 text-sm">{Math.round(accuracy)}%</p>
+      </>: <p>데이터 로딩 중...</p>}
     </div>
   );
 };

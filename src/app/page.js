@@ -27,7 +27,7 @@ export default function Home() {
             <SpeechToText micStream={micStream} action={sendScript} />
             <ResultViewer result={result} setVideo={setVideo} setVideoList={setVideoList} />      
           </>) : 
-          (<VideoViewer name={videoIndex} list={videoList} />)}
+          (<VideoViewer name={videoIndex} list={videoList} setVideoPage={setVideo} />)}
         </AnimatePresence>
       </section>
     </main>

@@ -25,8 +25,15 @@ export default function VideoViewer(props) {
     } 
 
     return (
-        <motion.div className="card bg-base-200 h-full">
-            <h1 className="text-center text-2xl p-7 bg-base-300 rounded-t-2xl">동영상을 보고 따라해보세요</h1>
+        <motion.div className="card bg-base-200 h-full"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <div className="flex justify-between p-5 bg-base-300 rounded-t-2xl items-center">
+                <h1 className="text-2xl">동영상을 보고 따라해보세요</h1>
+                <button type="button" className="btn btn-circle"
+                    onClick={() => props.setVideoPage(null)}>
+                    <span className="material-symbols-outlined">close</span>
+                </button>
+            </div>
             <section className="card-body items-center justify-center">
                 <div>
                     {props.list[cIndex] ? 

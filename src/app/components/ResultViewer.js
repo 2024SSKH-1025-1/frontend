@@ -31,7 +31,7 @@ export default function ResultViewer(props) {
                                     <h2 className="text-2xl">{element.title}</h2>
                                     <p>{element.description}</p>
                                     <p className="flex gap-2 items-center">
-                                        <span className="badge badge-outline text-emerald-700 text-lg h-8 shrink-0">효과</span>
+                                        <span className="badge badge-outline text-emerald-700 text-lg h-8 shrink-0 break-keep">효과</span>
                                         {element.effect}
                                     </p>
                                 </div>

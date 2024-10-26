@@ -4,7 +4,6 @@ import { useEffect } from "react";
 
 
 export default function ResultViewer(props) {
-    console.log(props.result);
 
     useEffect(() => {
         if (props.result) {

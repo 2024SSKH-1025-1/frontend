@@ -7,14 +7,10 @@ export async function SendSpeech(state, formData) {
         }
     }
 
-    const result = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/process-text/`, {
-        method: "POST",
+    const result = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/process-text?text=${formData.get("script")}`, {
         headers: {
             "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            "text": formData.get("script")
-        })
+        }
     });
 
     if (result.ok) {

@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
-import "@tensorflow/tfjs";
+import * as tf from "@tensorflow/tfjs";
 import * as posenet from "@tensorflow-models/posenet";
 
 const PoseNetComponent = () => {
@@ -52,7 +52,7 @@ const PoseNetComponent = () => {
 
     const fetchBackendKeypoints = async () => {
         try {
-            const response = await fetch(`${BACKEND}/next-keypoint`);
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/next-keypoint`);
             if (!response.ok) {
                 throw new Error("서버 응답이 올바르지 않습니다.");
             }
@@ -381,7 +381,7 @@ const PoseNetComponent = () => {
 
 const sendDataToBackend = async (data) => {
     try {
-        const response = await fetch(`${BACKEND}/pose`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/pose`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

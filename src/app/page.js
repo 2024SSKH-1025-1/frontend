@@ -22,7 +22,7 @@ export default function Home() {
       </section>
       <section id="userResult" className="flex flex-col gap-4 w-1/2">
         <AnimatePresence>
-        {!videoIndex ? 
+        {!videoList[videoIndex] ? 
           (<>
             <SpeechToText micStream={micStream} action={sendScript} />
             <ResultViewer result={result} setVideo={setVideo} setVideoList={setVideoList} />      

@@ -4,6 +4,8 @@ import "@tensorflow/tfjs";
 import * as posenet from "@tensorflow-models/posenet";
 
 const PoseNetComponent = () => {
+    const lastSaveTimeRef = useRef(null);
+    const [backendKeypoints, setBackendKeypoints] = useState(null);
     const [loadingMic, setLoading] = useState(false);
     const [camera, setCamera] = useState(undefined);
     
@@ -31,6 +33,7 @@ const PoseNetComponent = () => {
                     };
                 });
     
+                fetchBackendKeypoints();
                 loadPosenet();
                 setLoading(false);
             } catch {
@@ -47,11 +50,115 @@ const PoseNetComponent = () => {
         setInterval(() => detectPose(net), 100);
     };
 
+    const fetchBackendKeypoints = async () => {
+        try {
+            const response = await fetch(`${BACKEND}/next-keypoint`);
+            if (!response.ok) {
+                throw new Error("서버 응답이 올바르지 않습니다.");
+            }
+            const data = await response.json();
+            setBackendKeypoints(data.keypoints);
+        } catch (error) {
+            console.error("백엔드에서 키포인트를 가져오는 중 오류:", error);
+        }
+    };
+
+    const calculateCosineSimilarity = (keypoints1, keypoints2) => {
+        if (keypoints1.length !== keypoints2.length) {
+            console.warn("키포인트 수가 다릅니다. 공통 키포인트만 전달해야 합니다.");
+            return 0;
+        }
+
+        // 두 벡터의 x, y 좌표 차원별로 벡터 구성
+        const vector1 = [];
+        const vector2 = [];
+
+        keypoints1.forEach((kp1, index) => {
+            const kp2 = keypoints2[index];
+
+            vector1.push(kp1.position.x, kp1.position.y);
+            vector2.push(kp2.position.x, kp2.position.y);
+        });
+
+        // 벡터 내적 계산
+        const dotProduct = vector1.reduce((sum, val, i) => sum + val * vector2[i], 0);
+
+        // 벡터 크기 계산
+        const magnitude1 = Math.sqrt(vector1.reduce((sum, val) => sum + val ** 2, 0));
+        const magnitude2 = Math.sqrt(vector2.reduce((sum, val) => sum + val ** 2, 0));
+
+        // 코사인 유사도 계산
+        if (magnitude1 === 0 || magnitude2 === 0) {
+            return 0;
+        } else {
+            return dotProduct / (magnitude1 * magnitude2);
+        }
+    };
+
+    const addGaussianNoiseToFrame = (imageTensor, noiseStdDev) => {
+        const noise = tf.randomNormal(imageTensor.shape, 0, noiseStdDev);
+        return imageTensor.add(noise).clipByValue(0, 255);
+    };
+
     const detectPose = async (net) => {
         if (videoRef.current && canvasRef.current) {
-            const pose = await net.estimateSinglePose(videoRef.current, {
+            const videoTensor = tf.browser.fromPixels(videoRef.current);
+
+            // 비디오 프레임에 가우시안 노이즈 추가
+            const noiseStdDev = 3; // 필요에 따라 조절
+            const noisyFrame = addGaussianNoiseToFrame(videoTensor, noiseStdDev);
+
+            // 노이즈가 추가된 프레임으로 포즈 추정
+            const pose = await net.estimateSinglePose(noisyFrame, {
                 flipHorizontal: false,
             });
+
+            // 메모리 해제를 위해 텐서 삭제
+            videoTensor.dispose();
+            noisyFrame.dispose();
+
+            const keypointPositions = [];
+
+            pose.keypoints.forEach((keypoint) => {
+                if (keypoint.score >= 0.5) {
+                    const { x, y } = keypoint.position;
+
+                    const noiseX = tf.randomNormal([1], 0, noiseStdDev).dataSync()[0];
+                    const noiseY = tf.randomNormal([1], 0, noiseStdDev).dataSync()[0];
+
+                    keypointPositions.push({
+                        part: keypoint.part,
+                        position: { x: x + noiseX, y: y + noiseY },
+                        score: keypoint.score,
+                    });
+                }
+            });
+
+            if (backendKeypoints) {
+                const commonKeypoints = keypointPositions.filter((clientPoint) => backendKeypoints.some((backendPoint) => backendPoint.part === clientPoint.part));
+
+                const backendCommonKeypoints = backendKeypoints.filter((backendPoint) => keypointPositions.some((clientPoint) => clientPoint.part === backendPoint.part));
+
+                if (commonKeypoints.length > 0 && commonKeypoints.length === backendCommonKeypoints.length) {
+                    const similarity = calculateCosineSimilarity(commonKeypoints, backendCommonKeypoints);
+                    console.log("코사인 유사도:", similarity);
+                } else {
+                    console.log("공통 키포인트가 충분하지 않습니다.");
+                }
+            }
+
+            if (keypointPositions.length >= 11) {
+                const intervalInSeconds = 1; // 원하는 시간 간격(초)을 설정하세요
+                const currentTime = Date.now();
+
+                if (!lastSaveTimeRef.current || currentTime - lastSaveTimeRef.current >= intervalInSeconds * 1000) {
+                    // console.log(keypointPositions);
+                    // 데이터를 백엔드로 전송하거나 배열에 저장
+                    sendDataToBackend(keypointPositions);
+
+                    lastSaveTimeRef.current = currentTime;
+                }
+            }
 
             drawPose(pose);
         }
@@ -270,6 +377,27 @@ const PoseNetComponent = () => {
             </div>
         </div>
     );
+};
+
+const sendDataToBackend = async (data) => {
+    try {
+        const response = await fetch(`${BACKEND}/pose`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ keypoints: data }),
+        });
+
+        if (!response.ok) {
+            throw new Error("서버 응답이 올바르지 않습니다.");
+        }
+
+        const result = await response.json();
+        console.log("백엔드 응답:", result);
+    } catch (error) {
+        console.error("백엔드로 데이터 전송 중 오류 발생:", error);
+    }
 };
 
 export default PoseNetComponent;

@@ -55,7 +55,7 @@ export default function VideoViewer(props) {
                         <h2 className="text-2xl">{props.list[cIndex].title}</h2>
                         <p>{props.list[cIndex].description}</p>
                         <p className="flex gap-2 items-center">
-                            <span className="badge badge-outline text-emerald-700 h-8 text-lg">효과</span>
+                            <span className="badge badge-outline text-emerald-700 h-8 text-lg keep-all">효과</span>
                             {props.list[cIndex].effect}
                         </p>
                     </div>

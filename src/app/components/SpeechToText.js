@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 export default function SpeechToText(props) {
     const [transcription, setTranscription] = useState('');
     const [recorder, setMediaRecorder] = useState(null);
+    const [sendStatus, setSendStatus] = useState(false);
 
     // Function to convert audio blob to base64 encoded string
     const audioBlobToBase64 = (blob) => {
@@ -124,9 +125,17 @@ export default function SpeechToText(props) {
                 </p>
                 <p>{transcription}</p>
             </div>
-            <form className="flex gap-2 bg-base-300 m-8 p-2 rounded-[2rem]" action={props.action}>
+            <form className="flex gap-2 bg-base-300 m-8 p-2 rounded-[2rem]" action={props.action} onSubmit={() => {
+                setSendStatus(true);
+                setTimeout(() => setSendStatus(false), 5000);
+            }}>
                 <input type="hidden" name="script" value={transcription} />
-                <button className="btn btn-block shrink text-lg">메시지 전송하기</button>
+                <button className="btn btn-block shrink text-lg">
+                    {sendStatus ? <>
+                        <span className="material-symbols-outlined">check</span>
+                        메시지 전송됨
+                    </> : "메시지 전송하기"}
+                </button>
                 <button type="button" className="btn btn-block shrink text-lg" onClick={removeTranscription}>지우기</button>
             </form>
         </motion.div>

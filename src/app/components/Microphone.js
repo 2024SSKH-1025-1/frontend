@@ -17,7 +17,9 @@ export default function Microphone(props) {
                 }));
                 setMic(true);
             } catch {
-                dialog.current.showModal();
+                if (dialog.current) {
+                    dialog.current.showModal();
+                }
             }
             setLoading(false);
         } else {

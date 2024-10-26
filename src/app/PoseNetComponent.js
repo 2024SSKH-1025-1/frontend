@@ -34,7 +34,9 @@ const PoseNetComponent = () => {
                 loadPosenet();
                 setLoading(false);
             } catch {
-                dialog.current.showModal();
+                if (dialog.current) {
+                    dialog.current.showModal();
+                }
                 setCamera(undefined);
             }
         }

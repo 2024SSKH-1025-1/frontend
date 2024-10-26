@@ -34,11 +34,17 @@ export default function Microphone(props) {
             <Visualizer audio={props.micStream} mode={"current"} autoStart={true} lineWidth="thin">
                 {({ canvasRef, reset }) => (
                     <>
-                        <button type="button" className="btn btn-circle bg-base-100" onClick={() => {
+                        <button type="button" className="btn text-lg bg-base-100" onClick={() => {
                             setMicrophone(); reset; }}>
                             {loadingMic ? 
-                                <span className="loading loading-spinner" /> : 
-                                <span className="material-symbols-outlined">{!mic ? "speech_to_text" : "stop"}</span>}
+                                <>
+                                <span className="loading loading-spinner" />
+                                마이크를 켜는 중
+                                </> : 
+                                <>
+                                <span className="material-symbols-outlined">{!mic ? "speech_to_text" : "stop"}</span>
+                                {!mic ? "질문하기" : "그만 말하기"}
+                                </>}
                         </button>
                         <canvas ref={canvasRef} className="h-10 w-full rounded-xl" />
                     </>

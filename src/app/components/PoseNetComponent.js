@@ -9,6 +9,8 @@ const PoseNetComponent = () => {
     const [backendKeypoints, setBackendKeypoints] = useState(null);
     const [loadingMic, setLoading] = useState(false);
     const [camera, setCamera] = useState(undefined);
+    const [replay, setReplayBtn] = useState(false);
+    const [errorType, setErrorType] = useState("camera");
     
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
@@ -21,6 +23,7 @@ const PoseNetComponent = () => {
             camera.getTracks().forEach(track => track.stop());
             setCamera(undefined);
             setLoading(false);
+            setReplayBtn(true);
         } else {
             try {
                 const currentCamera = await navigator.mediaDevices.getUserMedia({
@@ -37,11 +40,15 @@ const PoseNetComponent = () => {
                 // fetchBackendKeypoints();
                 loadPosenet();
                 setLoading(false);
+                setReplayBtn(false);
             } catch {
                 if (dialog.current) {
+                    setErrorType("camera");
                     dialog.current.showModal();
                 }
                 setCamera(undefined);
+                setLoading(false);
+                setReplayBtn(true);
             }
         }
     };
@@ -49,13 +56,20 @@ const PoseNetComponent = () => {
     const loadPosenet = async () => {
         await tf.setBackend("webgl");
         await tf.ready();
-        console.log(tf.getBackend());
 
-        const detectorConfig = { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING };
-        const detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, detectorConfig);
-
-        
-        setInterval(() => detectPose(detector), 100);
+        try {
+            const detectorConfig = { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING };
+            const detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, detectorConfig);            
+            setInterval(() => detectPose(detector), 100);
+        } catch {
+            if (dialog.current) {
+                setErrorType("canvas");
+                dialog.current.showModal();
+            }
+            setCamera(undefined);
+            setLoading(false);
+            setReplayBtn(true);
+        }
     };
 
     const fetchBackendKeypoints = async () => {
@@ -187,7 +201,6 @@ const PoseNetComponent = () => {
     };
 
     const drawPose = (keypoints) => {
-
         const ctx = canvasRef.current.getContext("2d");
         ctx.clearRect(0, 0, 640, 480);
 
@@ -370,10 +383,17 @@ const PoseNetComponent = () => {
         <div className="mockup-browser bg-base-300 border h-full">
             <div className="mockup-browser-toolbar gap-4 justify-between">
                 <img src="/logo.png" alt="로고" className="h-16" />
-                <button type="button" className="btn btn-circle" onClick={setupCamera}>
-                    {loadingMic ? 
-                        <span className="loading loading-spinner" /> : 
-                        <span className="material-symbols-outlined">{camera ? "videocam_off" : "videocam"}</span>}
+                <button type="button" className="btn text-lg" onClick={setupCamera}>
+                    {loadingMic ?
+                        <>
+                            <span className="loading loading-spinner" />
+                            시작하는 중
+                        </> : 
+                        <>
+                            <span className="material-symbols-outlined">{camera ? "videocam_off" : "videocam"}</span>
+                            {camera ? "카메라 끄기" : "카메라 켜기"}
+                        </>
+                    }
                 </button>
             </div>
             <div className="flex items-center justify-center pb-20 bg-base-200 h-full">
@@ -393,11 +413,24 @@ const PoseNetComponent = () => {
                         height="480"
                         className="absolute top-0 left-0 rounded-xl"
                     />
+                    {replay ? <div className="relative w-full h-full top-[-100%] z-10 backdrop-blur flex items-center justify-center rounded-xl">
+                        <button type="button" className="absolute btn btn-circle text-lg" onClick={setupCamera}>
+                            <span className="material-symbols-outlined text-4xl">refresh</span>
+                        </button>
+                    </div>
+                    :""}
                 </div>
                 <dialog ref={dialog} className="modal">
                     <div className="modal-box">
-                        <h1 className="text-2xl my-2">카메라 권한을 부여받지 못했어요</h1>
-                        <p className="my-2">설정에서 카메라 권한을 허용해주시거나, 다시 시도해주세요.</p>
+                        <h1 className="text-2xl my-2">
+                            {errorType === "camera" ?
+                                "카메라 권한을 부여받지 못했어요" : "자세 인식 서비스 시작에 실패했어요."}
+                        </h1>
+                        <p className="my-2">
+                            {errorType === "camera" ?
+                                "설정에서 카메라 권한을 허용해주시거나, 다시 시도해주세요." :
+                                "이 창을 닫고 다시 해보세요."}
+                        </p>
                         <form method="dialog">
                             <button type="submit" className="btn btn-block">닫기</button>
                         </form>

@@ -54,8 +54,8 @@ export default function VideoViewer(props) {
                     <div className="flex flex-col gap-2 my-2">
                         <h2 className="text-2xl">{props.list[cIndex].title}</h2>
                         <p>{props.list[cIndex].description}</p>
-                        <p className="flex gap-2">
-                            <span className="badge badge-primary text-md">효과</span>
+                        <p className="flex gap-2 items-center">
+                            <span className="badge badge-outline text-emerald-700 h-8 text-lg">효과</span>
                             {props.list[cIndex].effect}
                         </p>
                     </div>

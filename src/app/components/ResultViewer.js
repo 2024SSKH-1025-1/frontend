@@ -9,6 +9,8 @@ export default function ResultViewer(props) {
         if (props.result) {
             if (!props.result.error) {
                 props.setVideoList(props.result);
+            } else {
+                console.log(props.result.error);
             }
         }
     }, [props.result]);
@@ -28,8 +30,8 @@ export default function ResultViewer(props) {
                                 <div className="flex flex-col gap-1 my-2">
                                     <h2 className="text-2xl">{element.title}</h2>
                                     <p>{element.description}</p>
-                                    <p className="flex gap-2">
-                                        <span className="badge badge-primary text-md w-12 shrink-0">효과</span>
+                                    <p className="flex gap-2 items-center">
+                                        <span className="badge badge-outline text-emerald-700 text-lg h-8 shrink-0">효과</span>
                                         {element.effect}
                                     </p>
                                 </div>
@@ -40,7 +42,10 @@ export default function ResultViewer(props) {
                             )}
                         </ul>
                     )) 
-                : <p>응답을 기다리는 중입니다.</p>}
+                : <p className="text-xl">
+                    당신을 위한 재활 서비스, <br />
+                    <span className="font-[goormSansBold]">RehabiTrainer AI</span>
+                </p>}
             </section>
         </motion.div>
     )

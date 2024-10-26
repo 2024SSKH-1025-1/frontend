@@ -1,17 +1,17 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import * as tf from "@tensorflow/tfjs";
 import * as posenet from "@tensorflow-models/posenet";
 
 const PoseNetComponent = () => {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
+    const lastSaveTimeRef = useRef(null);
+    const [backendKeypoints, setBackendKeypoints] = useState(null);
+    const BACKEND = process.env.BACKEND || "http://localhost:8000";
 
     useEffect(() => {
         const setupCamera = async () => {
-            if (
-                !navigator.mediaDevices ||
-                !navigator.mediaDevices.getUserMedia
-            ) {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 alert("웹캠을 사용할 수 없습니다.");
                 return;
             }
@@ -32,28 +32,114 @@ const PoseNetComponent = () => {
             setInterval(() => detectPose(net), 100);
         };
 
+        const fetchBackendKeypoints = async () => {
+            try {
+                const response = await fetch(`${BACKEND}/next-keypoint`);
+                if (!response.ok) {
+                    throw new Error("서버 응답이 올바르지 않습니다.");
+                }
+                const data = await response.json();
+                setBackendKeypoints(data.keypoints);
+            } catch (error) {
+                console.error("백엔드에서 키포인트를 가져오는 중 오류:", error);
+            }
+        };
+        const calculateCosineSimilarity = (keypoints1, keypoints2) => {
+            if (keypoints1.length !== keypoints2.length) {
+                console.warn("키포인트 수가 다릅니다. 공통 키포인트만 전달해야 합니다.");
+                return 0;
+            }
+
+            // 두 벡터의 x, y 좌표 차원별로 벡터 구성
+            const vector1 = [];
+            const vector2 = [];
+
+            keypoints1.forEach((kp1, index) => {
+                const kp2 = keypoints2[index];
+
+                vector1.push(kp1.position.x, kp1.position.y);
+                vector2.push(kp2.position.x, kp2.position.y);
+            });
+
+            // 벡터 내적 계산
+            const dotProduct = vector1.reduce((sum, val, i) => sum + val * vector2[i], 0);
+
+            // 벡터 크기 계산
+            const magnitude1 = Math.sqrt(vector1.reduce((sum, val) => sum + val ** 2, 0));
+            const magnitude2 = Math.sqrt(vector2.reduce((sum, val) => sum + val ** 2, 0));
+
+            // 코사인 유사도 계산
+            if (magnitude1 === 0 || magnitude2 === 0) {
+                return 0;
+            } else {
+                return dotProduct / (magnitude1 * magnitude2);
+            }
+        };
+
+        const addGaussianNoiseToFrame = (imageTensor, noiseStdDev) => {
+            const noise = tf.randomNormal(imageTensor.shape, 0, noiseStdDev);
+            return imageTensor.add(noise).clipByValue(0, 255);
+        };
+
         const detectPose = async (net) => {
             if (videoRef.current && canvasRef.current) {
-                const pose = await net.estimateSinglePose(videoRef.current, {
+                const videoTensor = tf.browser.fromPixels(videoRef.current);
+
+                // 비디오 프레임에 가우시안 노이즈 추가
+                const noiseStdDev = 3; // 필요에 따라 조절
+                const noisyFrame = addGaussianNoiseToFrame(videoTensor, noiseStdDev);
+
+                // 노이즈가 추가된 프레임으로 포즈 추정
+                const pose = await net.estimateSinglePose(noisyFrame, {
                     flipHorizontal: false,
                 });
+
+                // 메모리 해제를 위해 텐서 삭제
+                videoTensor.dispose();
+                noisyFrame.dispose();
 
                 const keypointPositions = [];
 
                 pose.keypoints.forEach((keypoint) => {
                     if (keypoint.score >= 0.5) {
                         const { x, y } = keypoint.position;
+
+                        const noiseX = tf.randomNormal([1], 0, noiseStdDev).dataSync()[0];
+                        const noiseY = tf.randomNormal([1], 0, noiseStdDev).dataSync()[0];
+
                         keypointPositions.push({
                             part: keypoint.part,
-                            position: { x, y },
+                            position: { x: x + noiseX, y: y + noiseY },
                             score: keypoint.score,
                         });
                     }
                 });
-                if (keypointPositions.length >= 11) {
-                    sendDataToBackend(keypointPositions);
+
+                if (backendKeypoints) {
+                    const commonKeypoints = keypointPositions.filter((clientPoint) => backendKeypoints.some((backendPoint) => backendPoint.part === clientPoint.part));
+
+                    const backendCommonKeypoints = backendKeypoints.filter((backendPoint) => keypointPositions.some((clientPoint) => clientPoint.part === backendPoint.part));
+
+                    if (commonKeypoints.length > 0 && commonKeypoints.length === backendCommonKeypoints.length) {
+                        const similarity = calculateCosineSimilarity(commonKeypoints, backendCommonKeypoints);
+                        console.log("코사인 유사도:", similarity);
+                    } else {
+                        console.log("공통 키포인트가 충분하지 않습니다.");
+                    }
                 }
-                console.log(keypointPositions);
+
+                if (keypointPositions.length >= 11) {
+                    const intervalInSeconds = 1; // 원하는 시간 간격(초)을 설정하세요
+                    const currentTime = Date.now();
+
+                    if (!lastSaveTimeRef.current || currentTime - lastSaveTimeRef.current >= intervalInSeconds * 1000) {
+                        // console.log(keypointPositions);
+                        // 데이터를 백엔드로 전송하거나 배열에 저장
+                        sendDataToBackend(keypointPositions);
+
+                        lastSaveTimeRef.current = currentTime;
+                    }
+                }
 
                 drawPose(pose);
             }
@@ -75,12 +161,8 @@ const PoseNetComponent = () => {
             });
 
             // 목과 허리 포인트 계산
-            const leftShoulder = pose.keypoints.find(
-                (k) => k.part === "leftShoulder"
-            );
-            const rightShoulder = pose.keypoints.find(
-                (k) => k.part === "rightShoulder"
-            );
+            const leftShoulder = pose.keypoints.find((k) => k.part === "leftShoulder");
+            const rightShoulder = pose.keypoints.find((k) => k.part === "rightShoulder");
             const leftHip = pose.keypoints.find((k) => k.part === "leftHip");
             const rightHip = pose.keypoints.find((k) => k.part === "rightHip");
 
@@ -89,10 +171,8 @@ const PoseNetComponent = () => {
 
             if (leftShoulder.score >= 0.5 && rightShoulder.score >= 0.5) {
                 // 목 좌표 계산
-                const neckX =
-                    (leftShoulder.position.x + rightShoulder.position.x) / 2;
-                const neckY =
-                    (leftShoulder.position.y + rightShoulder.position.y) / 2;
+                const neckX = (leftShoulder.position.x + rightShoulder.position.x) / 2;
+                const neckY = (leftShoulder.position.y + rightShoulder.position.y) / 2;
 
                 neck = {
                     position: { x: neckX, y: neckY },
@@ -175,10 +255,7 @@ const PoseNetComponent = () => {
 
         // 팔과 다리를 연결하는 스켈레톤 그리기 함수
         const drawSkeleton = (keypoints, minConfidence, ctx) => {
-            const adjacentKeyPoints = posenet.getAdjacentKeyPoints(
-                keypoints,
-                minConfidence
-            );
+            const adjacentKeyPoints = posenet.getAdjacentKeyPoints(keypoints, minConfidence);
 
             // 제외할 연결 쌍을 명시적으로 지정
             const excludedConnections = [
@@ -192,11 +269,7 @@ const PoseNetComponent = () => {
                 const toPart = keypointPair[1].part;
 
                 // 제외할 연결인지 확인
-                const isExcluded = excludedConnections.some(
-                    (pair) =>
-                        (pair[0] === fromPart && pair[1] === toPart) ||
-                        (pair[0] === toPart && pair[1] === fromPart)
-                );
+                const isExcluded = excludedConnections.some((pair) => (pair[0] === fromPart && pair[1] === toPart) || (pair[0] === toPart && pair[1] === fromPart));
 
                 if (!isExcluded) {
                     // 연결의 키로 사용할 문자열 생성
@@ -213,14 +286,8 @@ const PoseNetComponent = () => {
 
                     // 선 그리기
                     ctx.beginPath();
-                    ctx.moveTo(
-                        keypointPair[0].position.x,
-                        keypointPair[0].position.y
-                    );
-                    ctx.lineTo(
-                        keypointPair[1].position.x,
-                        keypointPair[1].position.y
-                    );
+                    ctx.moveTo(keypointPair[0].position.x, keypointPair[0].position.y);
+                    ctx.lineTo(keypointPair[1].position.x, keypointPair[1].position.y);
                     ctx.strokeStyle = strokeColor;
                     ctx.lineWidth = 2;
                     ctx.stroke();
@@ -229,33 +296,21 @@ const PoseNetComponent = () => {
         };
 
         setupCamera();
+        fetchBackendKeypoints();
         loadPosenet();
     }, []);
 
     return (
         <div style={{ position: "relative", width: 640, height: 480 }}>
-            <video
-                ref={videoRef}
-                style={{ position: "absolute", top: 0, left: 0 }}
-                autoPlay
-                playsInline
-                muted
-                width="640"
-                height="480"
-            />
-            <canvas
-                ref={canvasRef}
-                style={{ position: "absolute", top: 0, left: 0 }}
-                width="640"
-                height="480"
-            />
+            <video ref={videoRef} style={{ position: "absolute", top: 0, left: 0 }} autoPlay playsInline muted width="640" height="480" />
+            <canvas ref={canvasRef} style={{ position: "absolute", top: 0, left: 0 }} width="640" height="480" />
         </div>
     );
 };
 
 const sendDataToBackend = async (data) => {
     try {
-        const response = await fetch("http://localhost:8000/pose", {
+        const response = await fetch(`${BACKEND}/pose`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -268,9 +323,9 @@ const sendDataToBackend = async (data) => {
         }
 
         const result = await response.json();
-        console.log("back :", result);
+        console.log("백엔드 응답:", result);
     } catch (error) {
-        console.error("error :", error);
+        console.error("백엔드로 데이터 전송 중 오류 발생:", error);
     }
 };
 

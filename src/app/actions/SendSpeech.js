@@ -1,7 +1,13 @@
 "use server";
 
 export async function SendSpeech(state, formData) {
-    const result = await fetch(`${process.env.API_ENDPOINT}/process-text/`, {
+    if (formData.get("script") === "") {
+        return {
+            error: "요청하신 내용이 없어요"
+        }
+    }
+
+    const result = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPOINT}/process-text/`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json"

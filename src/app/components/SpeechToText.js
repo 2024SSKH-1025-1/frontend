@@ -1,5 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import { motion } from "framer-motion";
+
 export default function SpeechToText(props) {
     const [transcription, setTranscription] = useState('');
     const [recorder, setMediaRecorder] = useState(null);
@@ -113,7 +115,8 @@ export default function SpeechToText(props) {
     }, [props.micStream])
 
     return (
-        <div className="card bg-base-200 w-full rounded-xl h-1/2">
+        <motion.div className="card bg-base-200 w-full rounded-xl h-1/2"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <div className="card-body">
                 <p className="alert bg-base-300 grow-0">
                     <span className="material-symbols-outlined">info</span>
@@ -126,6 +129,6 @@ export default function SpeechToText(props) {
                 <button className="btn btn-block shrink text-lg">메시지 전송하기</button>
                 <button type="button" className="btn btn-block shrink text-lg" onClick={removeTranscription}>지우기</button>
             </form>
-        </div>
+        </motion.div>
     );
 }

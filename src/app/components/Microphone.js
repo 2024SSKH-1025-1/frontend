@@ -10,6 +10,7 @@ export default function Microphone(props) {
 
     async function setMicrophone() {
         if (!mic) {
+            props.setVideo(null);
             setLoading(true);
             try {
                 props.setMicStream(await navigator.mediaDevices.getUserMedia({
@@ -29,7 +30,7 @@ export default function Microphone(props) {
     }
 
     return (
-        <div className="flex gap-2 h-max p-4 bg-base-200 rounded-xl">
+        <div className="flex gap-2 h-max p-4 bg-base-200 rounded-xl" exit={{ opacity: 0 }}>
             <Visualizer audio={props.micStream} mode={"current"} autoStart={true} lineWidth="thin">
                 {({ canvasRef, reset }) => (
                     <>

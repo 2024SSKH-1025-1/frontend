@@ -303,55 +303,61 @@ const PoseNetComponent = () => {
 
     // 팔과 다리를 연결하는 스켈레톤 그리기 함수
     const drawSkeleton = (keypoints, minConfidence, ctx) => {
-        const adjacentKeyPoints = posenet.getAdjacentKeyPoints(
-            keypoints,
-            minConfidence
-        );
+        const adjacentPairs = poseDetection.util.getAdjacentPairs(poseDetection.SupportedModels.MoveNet);
 
         // 제외할 연결 쌍을 명시적으로 지정
         const excludedConnections = [
             ["left_hip", "left_shoulder"],
             ["right_hip", "right_shoulder"],
             ["left_hip", "right_hip"],
+            ["left_eye", "right_eye"],
+            ["left_eye", "nose"],
+            ["right_eye", "nose"],
+            ["right_eye", "right_ear"],
+            ["left_eye", "left_ear"]
         ];
 
-        adjacentKeyPoints.forEach((keypointPair) => {
-            const fromPart = keypointPair[0].name;
-            const toPart = keypointPair[1].name;
+        adjacentPairs.forEach((keypointPair) => {
+            const kps = [keypoints[keypointPair[0]], keypoints[keypointPair[1]]];
 
-            // 제외할 연결인지 확인
-            const isExcluded = excludedConnections.some(
-                (pair) =>
-                    (pair[0] === fromPart && pair[1] === toPart) ||
-                    (pair[0] === toPart && pair[1] === fromPart)
-            );
+            if (kps[0].score >= minConfidence && kps[1].score >= minConfidence) {
+                const fromPart = kps[0].name;
+                const toPart = kps[1].name;
 
-            if (!isExcluded) {
-                // 연결의 키로 사용할 문자열 생성
-                const connectionKey = `${fromPart}-${toPart}`;
-                const reverseConnectionKey = `${toPart}-${fromPart}`;
+                // 제외할 연결인지 확인
+                const isExcluded = excludedConnections.some(
+                    (pair) =>
+                        (pair[0] === fromPart && pair[1] === toPart) ||
+                        (pair[0] === toPart && pair[1] === fromPart)
+                );
 
-                // 연결의 색상 설정
-                let strokeColor = "green"; // 기본 색상
-                if (connectionColors[connectionKey]) {
-                    strokeColor = connectionColors[connectionKey];
-                } else if (connectionColors[reverseConnectionKey]) {
-                    strokeColor = connectionColors[reverseConnectionKey];
+                if (!isExcluded) {
+                    // 연결의 키로 사용할 문자열 생성
+                    const connectionKey = `${fromPart}-${toPart}`;
+                    const reverseConnectionKey = `${toPart}-${fromPart}`;
+
+                    // 연결의 색상 설정
+                    let strokeColor = "green"; // 기본 색상
+                    if (connectionColors[connectionKey]) {
+                        strokeColor = connectionColors[connectionKey];
+                    } else if (connectionColors[reverseConnectionKey]) {
+                        strokeColor = connectionColors[reverseConnectionKey];
+                    }
+
+                    // 선 그리기
+                    ctx.beginPath();
+                    ctx.moveTo(
+                        kps[0].x,
+                        kps[0].y
+                    );
+                    ctx.lineTo(
+                        kps[1].x,
+                        kps[1].y
+                    );
+                    ctx.strokeStyle = strokeColor;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
                 }
-
-                // 선 그리기
-                ctx.beginPath();
-                ctx.moveTo(
-                    keypointPair[0].x,
-                    keypointPair[0].y
-                );
-                ctx.lineTo(
-                    keypointPair[1].x,
-                    keypointPair[1].y
-                );
-                ctx.strokeStyle = strokeColor;
-                ctx.lineWidth = 2;
-                ctx.stroke();
             }
         });
     };

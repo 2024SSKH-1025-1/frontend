@@ -21,7 +21,7 @@ export default function Home() {
       <section id="userResult" className="flex flex-col gap-4 w-1/2">
         {!videoName ? (<>
           <SpeechToText micStream={micStream} action={sendScript} />
-          <ResultViewer result={result} />      
+          <ResultViewer result={result} setVideo={setVideo} setVideoList={setVideoList} />      
         </>) : (<></>)}
       </section>
     </main>

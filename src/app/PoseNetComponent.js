@@ -232,8 +232,8 @@ const PoseNetComponent = () => {
 
     return (
         <div className="mockup-browser bg-base-300 border h-full">
-            <div className="mockup-browser-toolbar gap-4">
-                <h1>사용자 모습</h1>
+            <div className="mockup-browser-toolbar gap-4 justify-between">
+                <img src="/logo.png" alt="로고" className="h-16" />
                 <button type="button" className="btn btn-circle" onClick={setupCamera}>
                     {loadingMic ? 
                         <span className="loading loading-spinner" /> : 

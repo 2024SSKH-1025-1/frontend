@@ -1,7 +1,8 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
+import * as poseDetection from '@tensorflow-models/pose-detection';
+import '@tensorflow/tfjs-backend-webgl';
 import * as tf from "@tensorflow/tfjs";
-import * as posenet from "@tensorflow-models/posenet";
 
 const PoseNetComponent = () => {
     const lastSaveTimeRef = useRef(null);
@@ -46,8 +47,15 @@ const PoseNetComponent = () => {
     };
 
     const loadPosenet = async () => {
-        const net = await posenet.load();
-        setInterval(() => detectPose(net), 100);
+        await tf.setBackend("webgl");
+        await tf.ready();
+        console.log(tf.getBackend());
+
+        const detectorConfig = { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING };
+        const detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, detectorConfig);
+
+        
+        setInterval(() => detectPose(detector), 100);
     };
 
     const fetchBackendKeypoints = async () => {
@@ -76,8 +84,8 @@ const PoseNetComponent = () => {
         keypoints1.forEach((kp1, index) => {
             const kp2 = keypoints2[index];
 
-            vector1.push(kp1.position.x, kp1.position.y);
-            vector2.push(kp2.position.x, kp2.position.y);
+            vector1.push(kp1.x, kp1.y);
+            vector2.push(kp2.x, kp2.y);
         });
 
         // 벡터 내적 계산
@@ -100,8 +108,10 @@ const PoseNetComponent = () => {
         return imageTensor.add(noise).clipByValue(0, 255);
     };
 
-    const detectPose = async (net) => {
+    const detectPose = async (detector) => {
         if (videoRef.current && canvasRef.current) {
+            const poses = await detector.estimatePoses(videoRef.current);   
+
             // const videoTensor = tf.browser.fromPixels(videoRef.current);
 
             // // 비디오 프레임에 가우시안 노이즈 추가
@@ -112,9 +122,6 @@ const PoseNetComponent = () => {
             // const pose = await net.estimateSinglePose(noisyFrame, {
             //     flipHorizontal: false,
             // });
-            const pose = await net.estimateSinglePose(videoRef.current, {
-                flipHorizontal: true,
-            });
 
             // // 메모리 해제를 위해 텐서 삭제
             // videoTensor.dispose();
@@ -122,7 +129,7 @@ const PoseNetComponent = () => {
 
             // const keypointPositions = [];
 
-            // pose.keypoints.forEach((keypoint) => {
+            // keypoints.forEach((keypoint) => {
             //     if (keypoint.score >= 0.5) {
             //         const { x, y } = keypoint.position;
 
@@ -137,17 +144,31 @@ const PoseNetComponent = () => {
             //     }
             // });
 
-            if (backendKeypoints) {
-                const commonKeypoints = keypointPositions.filter((clientPoint) => backendKeypoints.some((backendPoint) => backendPoint.part === clientPoint.part));
-
-                const backendCommonKeypoints = backendKeypoints.filter((backendPoint) => keypointPositions.some((clientPoint) => clientPoint.part === backendPoint.part));
-
-                if (commonKeypoints.length > 0 && commonKeypoints.length === backendCommonKeypoints.length) {
-                    const similarity = calculateCosineSimilarity(commonKeypoints, backendCommonKeypoints);
-                    console.log("코사인 유사도:", similarity);
-                } else {
-                    console.log("공통 키포인트가 충분하지 않습니다.");
+            if (poses.length > 0) {
+                const pose = poses[0];
+          
+                if (backendKeypoints) {
+                    const commonKeypoints = keypointPositions.filter((clientPoint) => 
+                        backendKeypoints.some((backendPoint) => backendPoint.part === clientPoint.part)
+                    );
+                    const backendCommonKeypoints = backendKeypoints.filter((backendPoint) => 
+                        keypointPositions.some((clientPoint) => clientPoint.part === backendPoint.part)
+                    );
+                  
+                    if (commonKeypoints.length > 0 && commonKeypoints.length === backendCommonKeypoints.length) {
+                        const similarity = calculateCosineSimilarity(commonKeypoints, backendCommonKeypoints);
+                        console.log("코사인 유사도:", similarity);
+                    } else {
+                        console.log("공통 키포인트가 충분하지 않습니다.");
+                    }
                 }
+
+                const flippedKeypoints = pose.keypoints.map((keypoint) => ({
+                    ...keypoint,
+                    x: videoRef.current.videoWidth - keypoint.x, // 가로 축을 따라 뒤집기
+                }));
+          
+                drawPose(flippedKeypoints);
             }
 
             // if (keypointPositions.length >= 11) {
@@ -162,19 +183,18 @@ const PoseNetComponent = () => {
             //         lastSaveTimeRef.current = currentTime;
             //     }
             // }
-
-            drawPose(pose);
         }
     };
 
-    const drawPose = (pose) => {
+    const drawPose = (keypoints) => {
+
         const ctx = canvasRef.current.getContext("2d");
         ctx.clearRect(0, 0, 640, 480);
 
         // 각 키포인트를 그리기
-        pose.keypoints.forEach((keypoint) => {
+        keypoints.forEach((keypoint) => {
             if (keypoint.score >= 0.5) {
-                const { y, x } = keypoint.position;
+                const { y, x } = keypoint;
                 ctx.beginPath();
                 ctx.arc(x, y, 5, 0, 2 * Math.PI);
                 ctx.fillStyle = "red";
@@ -183,14 +203,14 @@ const PoseNetComponent = () => {
         });
 
         // 목과 허리 포인트 계산
-        const leftShoulder = pose.keypoints.find(
-            (k) => k.part === "leftShoulder"
+        const leftShoulder = keypoints.find(
+            (k) => k.name === "left_shoulder"
         );
-        const rightShoulder = pose.keypoints.find(
-            (k) => k.part === "rightShoulder"
+        const rightShoulder = keypoints.find(
+            (k) => k.name === "right_shoulder"
         );
-        const leftHip = pose.keypoints.find((k) => k.part === "leftHip");
-        const rightHip = pose.keypoints.find((k) => k.part === "rightHip");
+        const leftHip = keypoints.find((k) => k.name === "left_hip");
+        const rightHip = keypoints.find((k) => k.name === "right_hip");
 
         let neck = null;
         let waist = null;
@@ -198,9 +218,9 @@ const PoseNetComponent = () => {
         if (leftShoulder.score >= 0.5 && rightShoulder.score >= 0.5) {
             // 목 좌표 계산
             const neckX =
-                (leftShoulder.position.x + rightShoulder.position.x) / 2;
+                (leftShoulder.x + rightShoulder.x) / 2;
             const neckY =
-                (leftShoulder.position.y + rightShoulder.position.y) / 2;
+                (leftShoulder.y + rightShoulder.y) / 2;
 
             neck = {
                 position: { x: neckX, y: neckY },
@@ -217,8 +237,8 @@ const PoseNetComponent = () => {
 
         if (leftHip.score >= 0.5 && rightHip.score >= 0.5) {
             // 허리 좌표 계산
-            const waistX = (leftHip.position.x + rightHip.position.x) / 2;
-            const waistY = (leftHip.position.y + rightHip.position.y) / 2;
+            const waistX = (leftHip.x + rightHip.x) / 2;
+            const waistY = (leftHip.y + rightHip.y) / 2;
 
             waist = {
                 position: { x: waistX, y: waistY },
@@ -248,7 +268,7 @@ const PoseNetComponent = () => {
             // 허리와 왼쪽 엉덩이 연결
             ctx.beginPath();
             ctx.moveTo(waist.position.x, waist.position.y);
-            ctx.lineTo(leftHip.position.x, leftHip.position.y);
+            ctx.lineTo(leftHip.x, leftHip.y);
             ctx.strokeStyle = "orange";
             ctx.lineWidth = 2;
             ctx.stroke();
@@ -258,27 +278,27 @@ const PoseNetComponent = () => {
             // 허리와 오른쪽 엉덩이 연결
             ctx.beginPath();
             ctx.moveTo(waist.position.x, waist.position.y);
-            ctx.lineTo(rightHip.position.x, rightHip.position.y);
+            ctx.lineTo(rightHip.x, rightHip.y);
             ctx.strokeStyle = "orange";
             ctx.lineWidth = 2;
             ctx.stroke();
         }
 
         // 기존의 스켈레톤 그리기 (팔과 다리)
-        drawSkeleton(pose.keypoints, 0.5, ctx);
+        drawSkeleton(keypoints, 0.5, ctx);
     };
 
     // 각 연결에 대한 색상을 정의
     const connectionColors = {
-        "leftElbow-leftShoulder": "cyan",
-        "leftElbow-leftWrist": "magenta",
-        "rightElbow-rightShoulder": "cyan",
-        "rightElbow-rightWrist": "magenta",
-        "leftShoulder-rightShoulder": "yellow",
-        "leftHip-leftKnee": "blue",
-        "leftKnee-leftAnkle": "blue",
-        "rightHip-rightKnee": "green",
-        "rightKnee-rightAnkle": "green",
+        "left_elbow-left_shoulder": "cyan",
+        "left_elbow-left_wrist": "magenta",
+        "right_elbow-right_shoulder": "cyan",
+        "right_elbow-right_wrist": "magenta",
+        "left_shoulder-right_shoulder": "yellow",
+        "left_hip-left_knee": "blue",
+        "left_knee-left_ankle": "blue",
+        "right_hip-right_knee": "green",
+        "right_knee-right_ankle": "green",
     };
 
     // 팔과 다리를 연결하는 스켈레톤 그리기 함수
@@ -290,14 +310,14 @@ const PoseNetComponent = () => {
 
         // 제외할 연결 쌍을 명시적으로 지정
         const excludedConnections = [
-            ["leftHip", "leftShoulder"],
-            ["rightHip", "rightShoulder"],
-            ["leftHip", "rightHip"],
+            ["left_hip", "left_shoulder"],
+            ["right_hip", "right_shoulder"],
+            ["left_hip", "right_hip"],
         ];
 
         adjacentKeyPoints.forEach((keypointPair) => {
-            const fromPart = keypointPair[0].part;
-            const toPart = keypointPair[1].part;
+            const fromPart = keypointPair[0].name;
+            const toPart = keypointPair[1].name;
 
             // 제외할 연결인지 확인
             const isExcluded = excludedConnections.some(
@@ -322,12 +342,12 @@ const PoseNetComponent = () => {
                 // 선 그리기
                 ctx.beginPath();
                 ctx.moveTo(
-                    keypointPair[0].position.x,
-                    keypointPair[0].position.y
+                    keypointPair[0].x,
+                    keypointPair[0].y
                 );
                 ctx.lineTo(
-                    keypointPair[1].position.x,
-                    keypointPair[1].position.y
+                    keypointPair[1].x,
+                    keypointPair[1].y
                 );
                 ctx.strokeStyle = strokeColor;
                 ctx.lineWidth = 2;
